@@ -40,19 +40,32 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size){
     int argc = 0;
     char **argv;
     
-    char *opt_fuzz = malloc(Size);
+    char *opt_fuzz = malloc(Size+1);
 
-    memcpy(opt_fuzz, Data, Size-1);
-    opt_fuzz[Size-1] = 0;
-
+    memcpy(opt_fuzz, Data, Size);
+    opt_fuzz[Size] = 0;
+    
+    //for argv[0]
     int i=0;
-    argv[i] = strtok(opt_fuzz, " ");
-    if(argv == NULL) return 1;
+    argv = (char **)malloc(sizeof(char *));
+    *argv = (char *)malloc(12);
+    strncpy(*argv,"./fuzz-main",11);
+    (*argv)[11] = '\0';
     argc++;
-    i++;
-    while((argv[i] = strtok(NULL," "))!=NULL){
+    //printf("here: %s\n",argv[i]);
+
+    char *temp = strtok(opt_fuzz," ");
+    while(temp != NULL){
         argc++;
         i++;
+        argv = (char **)realloc(argv, sizeof(char *)*argc);
+        argv[i] = temp;
+        temp = strtok(NULL," ");
+    }
+
+    printf("check: %d\n",argc);
+    for(int i=0;i<argc;i++){
+        printf("argv[%d]: %s\n",i,argv[i]);
     }
 
     struct argparse argparse;
@@ -79,6 +92,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size){
     if (perms) {
         printf("perms: %d\n", perms);
     }
-    argc = argparse_parse(&argparse, argc, (const char **)argv);
+    for(int i=0;i<argc;i++){
+        free(argv[i]);
+    }
+    free(argv);
     return 0;
 }
